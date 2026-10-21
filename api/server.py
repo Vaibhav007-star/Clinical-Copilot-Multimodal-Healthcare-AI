@@ -330,9 +330,37 @@ def generate_unified_review(payload: ReviewPayload):
     )
     return summary.model_dump()
 
-# Mount Sample Images static route
-app.mount("/data/sample_images", StaticFiles(directory=str(settings.sample_images_dir)), name="sample_images")
+from fastapi.responses import FileResponse
 
-# Mount Web Application static files
 WEB_DIR = Path(__file__).resolve().parent.parent / "web"
-app.mount("/", StaticFiles(directory=str(WEB_DIR), html=True), name="web")
+
+@app.get("/")
+def serve_index():
+    """Serves the Clinical Copilot web interface."""
+    index_file = WEB_DIR / "index.html"
+    if index_file.exists():
+        return FileResponse(str(index_file), media_type="text/html")
+    return {"status": "Clinical Copilot Online", "docs": "/docs"}
+
+@app.get("/index.css")
+def serve_css():
+    """Serves the main application stylesheet."""
+    css_file = WEB_DIR / "index.css"
+    if css_file.exists():
+        return FileResponse(str(css_file), media_type="text/css")
+    return ""
+
+@app.get("/app.js")
+def serve_js():
+    """Serves the client-side JavaScript logic."""
+    js_file = WEB_DIR / "app.js"
+    if js_file.exists():
+        return FileResponse(str(js_file), media_type="application/javascript")
+    return ""
+
+# Mount Sample Images static route if directory exists
+if settings.sample_images_dir.exists():
+    app.mount("/data/sample_images", StaticFiles(directory=str(settings.sample_images_dir)), name="sample_images")
+
+if WEB_DIR.exists():
+    app.mount("/web", StaticFiles(directory=str(WEB_DIR)), name="web_static")
