@@ -1,0 +1,43 @@
+# 2022 AHA/ACC/HFSA Guideline for the Management of Heart Failure
+## Source: American College of Cardiology Foundation & American Heart Association
+## Publication Reference: J Am Coll Cardiol. 2022;79(17):e263–e421
+## Section: Diagnostic Workup, Staging, and Pharmacotherapy
+
+[Page 1]
+### 2.1 Universal Definition and Classification of Heart Failure
+Heart failure is a complex clinical syndrome with symptoms and signs resulting from structural or functional cardiac abnormality.
+Classification by Left Ventricular Ejection Fraction (LVEF):
+1. Heart Failure with Reduced Ejection Fraction (HFrEF): LVEF <= 40%.
+2. Heart Failure with Mildly Reduced Ejection Fraction (HFmrEF): LVEF 41% to 49%.
+3. Heart Failure with Preserved Ejection Fraction (HFpEF): LVEF >= 50% with evidence of elevated filling pressures.
+4. Heart Failure with Improved Ejection Fraction (HFimpEF): Baseline LVEF <= 40% with a >= 10-point increase to > 40%.
+
+[Page 2]
+### 2.2 Diagnostic Evaluation and Medical Imaging in Heart Failure
+1. Laboratory evaluation:
+   - Serum B-type natriuretic peptide (BNP) or N-terminal pro-B-type natriuretic peptide (NT-proBNP) is strongly recommended (Class 1) to support diagnosis or exclude HF. Elevated levels correlate with hemodynamic wall stress.
+   - Complete blood count, serum creatinine, electrolytes, fasting glucose, lipid profile, liver function tests, and thyroid stimulating hormone.
+2. Chest Radiography (CXR):
+   - Recommended in initial evaluation to detect cardiomegaly (cardiothoracic ratio > 0.50), pulmonary venous congestion, interstitial/alveolar pulmonary edema (Kerley B lines), and bilateral pleural effusions.
+   - Distinguishes primary pulmonary disease from cardiogenic decompensation.
+3. Transthoracic Echocardiogram (TTE):
+   - Mandatory initial imaging modality to determine LVEF, chamber sizes, ventricular wall thickness, diastolic function, and valvular abnormalities.
+
+[Page 3]
+### 2.3 Guideline-Directed Medical Therapy (GDMT) for HFrEF
+In all patients with HFrEF (Stage C), the foundational 4-pillar medical therapy is recommended to reduce hospitalizations and all-cause mortality:
+1. Renin-Angiotensin System Inhibition:
+   - Angiotensin Receptor-Neprilysin Inhibitor (ARNI, sacubitril/valsartan) is preferred first-line over ACE inhibitors or ARBs.
+   - In patients who cannot tolerate ARNI, ACE inhibitors (enalapril, lisinopril, ramipril) or ARBs (candesartan, valsartan) are indicated.
+2. Evidence-Based Beta-Blockers:
+   - One of three proven beta-blockers: Carvedilol, Metoprolol Succinate extended-release, or Bisoprolol.
+3. Mineralocorticoid Receptor Antagonists (MRA):
+   - Spironolactone or Eplerenone in patients with eGFR > 30 mL/min/1.73m2 and serum potassium < 5.0 mEq/L.
+4. Sodium-Glucose Cotransporter-2 (SGLT2) Inhibitors:
+   - Empagliflozin (10 mg daily) or Dapagliflozin (10 mg daily), regardless of diabetes status.
+Loop diuretics (furosemide, bumetanide, torsemide) should be titrated to achieve and maintain euvolemia.
+
+[Page 4]
+### 2.4 Prevention of Decompensation and Inpatient Escalation
+Patients with resting systolic BP < 90 mm Hg, worsening renal function (creatinine rise > 0.5 mg/dL), intractable peripheral edema, or rest dyspnea require urgent hospital admission.
+Evaluation of secondary precipitating causes: medication non-adherence, dietary sodium indiscretion, concurrent respiratory infection, acute myocardial ischemia, or unmanaged tachyarrhythmias (atrial fibrillation).

@@ -1,0 +1,33 @@
+# Virtual Environment
+venv/
+.venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# PyTorch & HuggingFace Models / Caches
+*.pt
+*.pth
+*.bin
+.cache/
+hf_cache/
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Environment variables
+.env
+
+# Testing & Coverage
+.pytest_cache/
+htmlcov/
+.coverage
+
+# Vector DB & Indices
+faiss_index/
+chroma_db/
+
+# Logs & scratch
+*.log
+scratch/

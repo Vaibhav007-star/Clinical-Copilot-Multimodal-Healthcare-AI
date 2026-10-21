@@ -1,0 +1,42 @@
+# 2021 AHA/ACC/ASE/CHEST/SAEM/SCCT/SCMR Guideline for the Evaluation and Diagnosis of Chest Pain
+## Source: American College of Cardiology & American Heart Association Joint Committee on Clinical Practice Guidelines
+## Publication Reference: Circulation. 2021;144:e368–e454
+## Section 1: Initial Evaluation and Risk Triage
+
+[Page 1]
+### 1.1 Clinical Presentation and Chest Pain Characteristics
+Chest pain should be considered as pain, pressure, tightness, or discomfort in the chest, neck, shoulders, jaw, or arms. 
+The term "atypical" chest pain is discouraged as it is misleading; instead, pain should be described as cardiac, possibly cardiac, or noncardiac.
+Features suggestive of acute coronary syndrome (ACS) include retrosternal pain radiating to the left arm, neck, or jaw, associated with diaphoresis, dyspnea, nausea, and lightheadedness. 
+Features decreasing the likelihood of acute myocardial ischemia include sharp, pleuritic chest pain aggravated by respiration, strictly localized with one finger, or reproduced by chest wall palpation.
+
+[Page 2]
+### 1.2 Diagnostic Electrocardiogram (ECG) and Chest Radiography
+A 12-lead ECG must be performed and evaluated within 10 minutes of patient arrival in all patients presenting with acute chest pain.
+ST-elevation indicates immediate STEMI pathway activation and urgent reperfusion.
+ST-segment depression (especially horizontal or downsloping >= 0.5 mm) or deep symmetrical T-wave inversions strongly suggest high-risk acute ischemia or non-ST-elevation myocardial infarction (NSTEMI).
+Chest radiography (Chest X-Ray) is recommended for all patients with acute chest pain to assess for alternative or concomitant conditions, including:
+1. Cardiomegaly and pulmonary venous congestion (suggesting congestive heart failure).
+2. Pneumonia or pulmonary consolidation.
+3. Pneumothorax (absence of peripheral lung markings).
+4. Widened mediastinum (suggesting thoracic aortic dissection requiring urgent CTA).
+
+[Page 3]
+### 1.3 High-Sensitivity Cardiac Troponin (hs-cTn) Biomarkers
+High-sensitivity cardiac troponin (hs-cTn I or T) is the preferred biomarker for detecting myocardial injury.
+Serial sampling protocols (0/1-hour, 0/2-hour, or 0/3-hour) are recommended to assess for significant dynamic delta rises.
+In patients with low clinical risk scores and undetectable baseline hs-cTn levels, early discharge and outpatient management are safe.
+In patients with intermediate or high clinical risk, elevated baseline troponin, or significant dynamic rise, hospitalization and inpatient cardiology consultation are indicated.
+
+[Page 4]
+### 1.4 Clinical Risk Scoring Systems
+For patients presenting with acute chest pain, validated clinical risk scores (such as HEART Score or EDACS) should be utilized.
+The HEART Score evaluates:
+- History (Slightly, Moderately, or Highly suspicious)
+- ECG (Normal, Non-specific repolarization disturbance, or Significant ST deviation)
+- Age (<45, 45-64, >=65)
+- Risk Factors (Hypertension, Hypercholesterolemia, Diabetes, Smoking, Family History, Obesity)
+- Troponin (<= normal limit, 1-3x normal limit, >3x normal limit)
+A low HEART score (0-3) identifies patients with <2% 30-day major adverse cardiac event (MACE) risk suitable for outpatient disposition.
+A score of 4-6 indicates intermediate risk requiring observation and provocative or anatomical testing (CCTA or Stress SPECT/MRI).
+A score of 7-10 represents high risk requiring direct coronary angiography and aggressive anti-ischemic medical therapy.

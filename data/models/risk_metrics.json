@@ -1,0 +1,10 @@
+{
+  "test_roc_auc": 0.9274,
+  "test_accuracy": 0.8804,
+  "test_sensitivity": 0.8922,
+  "brier_score": 0.0968,
+  "training_samples": 734,
+  "validation_samples": 184,
+  "dataset_origin": "Kaggle Heart Failure Prediction (fedesoriano)",
+  "validation_method": "Stratified Train/Test (80/20) + 5-Fold Probability Calibration"
+}

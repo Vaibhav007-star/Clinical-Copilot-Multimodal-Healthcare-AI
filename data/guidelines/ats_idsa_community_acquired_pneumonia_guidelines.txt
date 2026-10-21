@@ -1,0 +1,44 @@
+# 2019 ATS/IDSA Guideline: Diagnosis and Treatment of Community-Acquired Pneumonia
+## Source: American Thoracic Society & Infectious Diseases Society of America
+## Publication Reference: Am J Respir Crit Care Med. 2019;200(7):e45–e67
+## Section: Diagnosis, Site-of-Care Triage, and Antimicrobial Management
+
+[Page 1]
+### 3.1 Diagnostic Confirmation with Chest Imaging
+A clinical diagnosis of Community-Acquired Pneumonia (CAP) requires:
+1. Symptoms of acute lower respiratory tract infection (cough, fever, dyspnea, pleuritic chest pain, sputum production, auscultatory crackles/bronchial breath sounds).
+2. Radiographic confirmation: Chest radiography (CXR) showing the presence of a new or progressive pulmonary infiltrate, consolidation, or air bronchograms.
+CXR is vital to differentiate pneumonia from acute bronchitis, chronic obstructive pulmonary disease (COPD) exacerbation, and congestive heart failure.
+CT of the chest is reserved for diagnostic uncertainty, immunocompromised hosts, or suspicion of complications (empyema, cavitation, abscess, underlying malignancy).
+
+[Page 2]
+### 3.2 Site-of-Care Decisions and Severity Scores (CURB-65 / PSI)
+Clinicians should use a validated clinical prediction rule for prognosis, preferably the Pneumonia Severity Index (PSI), supplemented by CURB-65 criteria.
+CURB-65 Criteria (1 point for each present):
+- Confusion (new onset disorientation)
+- Urea (BUN > 19 mg/dL or > 7 mmol/L)
+- Respiratory rate >= 30 breaths/min
+- Blood pressure (Systolic BP < 90 mm Hg or Diastolic BP <= 60 mm Hg)
+- Age >= 65 years
+Triage recommendations:
+- Score 0 to 1: Low risk (<3% 30-day mortality); outpatient treatment is recommended.
+- Score 2: Intermediate risk (approx. 9% mortality); inpatient hospital admission or closely monitored outpatient observation.
+- Score 3 to 5: High risk (15-40% mortality); inpatient admission, evaluate for intensive care unit (ICU) admission if severe criteria met.
+
+[Page 3]
+### 3.3 Empiric Antimicrobial Therapy for Outpatients
+1. For outpatients without comorbidities or risk factors for antibiotic-resistant pathogens:
+   - Amoxicillin 1 g orally 3 times daily (strong recommendation), OR
+   - Doxycycline 100 mg orally twice daily (conditional recommendation), OR
+   - Macrolide (azithromycin 500 mg on day 1, then 250 mg daily; or clarithromycin 500 mg twice daily) ONLY in areas with pneumococcal macrolide resistance < 25%.
+2. For outpatients with comorbidities (chronic heart failure, COPD, diabetes, renal failure, liver disease, malignancy, asplenia):
+   - Combination therapy: Beta-lactam (Amoxicillin/clavulanate 875/125 mg twice daily or 2000/125 mg twice daily; or Cefuroxime 500 mg twice daily) PLUS a Macrolide (Azithromycin) or Doxycycline, OR
+   - Monotherapy with a respiratory fluoroquinolone (Levofloxacin 750 mg daily, or Moxifloxacin 400 mg daily).
+
+[Page 4]
+### 3.4 Inpatient Treatment Regimens and Corticosteroids
+1. Nonsevere Inpatient CAP:
+   - Standard regimen: Beta-lactam (Ampicillin/sulbactam 1.5-3 g every 6h, Cefotaxime 1-2 g every 8h, or Ceftriaxone 1-2 g daily) PLUS a macrolide (Azithromycin 500 mg daily IV/oral), OR
+   - Monotherapy with a respiratory fluoroquinolone (Levofloxacin 750 mg daily IV/oral).
+2. Corticosteroids: Routine use of systemic corticosteroids is NOT recommended in patients with nonsevere CAP. Corticosteroids are reserved for refractory septic shock or concomitant COPD/asthma exacerbation.
+Duration of therapy: Minimum of 5 days, continuing until clinical stability is achieved (afebrile for 48 hours and no more than 1 sign of clinical instability).
