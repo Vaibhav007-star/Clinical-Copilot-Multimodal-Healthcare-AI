@@ -24,6 +24,7 @@ class ImagingAnalysisResult(BaseModel):
     top_confidence: float = Field(0.0, description="Confidence of the primary finding")
     visualization_available: bool = Field(False, description="Whether an anatomical Grad-CAM heatmap was generated")
     heatmap_path: Optional[str] = Field(None, description="Path to the generated Grad-CAM overlay image")
+    available_heatmaps: Dict[str, str] = Field(default_factory=dict, description="Map of pathology names to Grad-CAM heatmap URLs/paths")
     warnings: List[str] = Field(default_factory=list, description="Diagnostic uncertainty warnings or technical cautions")
     limitations: str = Field(
         "AI screening prototype for research & clinical decision support only. "

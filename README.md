@@ -12,10 +12,16 @@
 ## 🌟 Overview
 **Clinical Copilot** is a modular, transparent healthcare AI application designed for clinical decision-support and medical education. It combines three multimodal AI capabilities into a unified clinician workspace:
 
-1. **Module A — Medical Imaging Intelligence:** Frontal Chest X-Ray (CXR) radiograph screening with DenseNet121, multi-pathology confidence scoring (Cardiomegaly, Pneumonia, Consolidation, Effusion, Atelectasis, Infiltration, Normal), and anatomical **Grad-CAM** visual saliency maps.
-2. **Module B — Patient Risk Assessment:** Calibrated cardiovascular disease and heart failure risk calculator trained and validated directly on the real **Kaggle 918-Patient Heart Failure Cohort** (`fedesoriano/heart-failure-prediction`), achieving **92.7% Test ROC-AUC** with feature attribution.
-3. **Module C — RAG-Powered Clinical Guidelines:** Semantic search and evidence retrieval grounded in authoritative AHA/ACC Chest Pain, AHA/ACC Heart Failure, and ATS/IDSA Community-Acquired Pneumonia guidelines with FAISS vector indexing, Sentence-Transformers (`all-MiniLM-L6-v2`), and **traceable bibliographic citations** (including exact page and section numbers).
-4. **Unified Clinical Review:** Synthesizes multimodal observations with strict provenance tracking, automated conflict detection, and clinical uncertainty reporting.
+1. **Module A — Medical Imaging Intelligence:** Frontal Chest X-Ray (CXR) radiograph screening with DenseNet121, multi-pathology confidence scoring, anatomical **Grad-CAM** visual saliency maps, **Multi-Pathology Heatmap Switching**, and **DICOM-Style Radiological Windowing** (Standard, Lung Window, Mediastinal/Soft Tissue, Bone Detail, and Invert/Negative Film).
+2. **Module B — Patient Risk & Counterfactual Intelligence:** 
+   - Calibrated cardiovascular disease risk calculator trained on the real **Kaggle 918-Patient Heart Failure Cohort** achieving **92.7% Test ROC-AUC**.
+   - **Interactive What-If Counterfactual Simulator:** Models prospective clinical interventions with dynamic calculation of Absolute Risk Reduction (ARR), Relative Risk Reduction (RRR), Number Needed to Treat (NNT), and ranked high-yield modifiable factors.
+   - **Evidence-Based Multi-Score Panel:** Integrated calculators for **Framingham 10-Yr ASCVD**, **CURB-65 Pneumonia Severity**, **Wells' Criteria for Pulmonary Embolism**, and **CHA2DS2-VASc AFib Stroke Risk**.
+3. **Module C — Guidelines RAG & Safety Guardrails:** Semantic search grounded in AHA/ACC Chest Pain, AHA/ACC Heart Failure, and ATS/IDSA CAP guidelines with FAISS vector indexing, traceable citations, and **Automated Pharmacotherapy Contraindication Screening** (e.g., Nitrates + PDE-5 inhibitors, Beta-Blockers in bradycardia, NSAIDs in decompensated HF).
+4. **Unified Multimodal Synthesis & Clinical Governance:**
+   - **Multimodal AI Differential Diagnosis (DDx) Engine:** Produces primary working diagnoses with ICD-10 codes, probability estimates, rival diagnoses, ruled-out conditions with negative clinical rationale, red-flag alerts, and STAT/urgent workup orders.
+   - **HL7 FHIR R4 Interoperability:** Generates standardized FHIR R4 Document Bundles (`Patient`, `Observation`, `RiskAssessment`, `DiagnosticReport`) ready for hospital EHR ingestion.
+   - **Electronic Clinician Attestation:** Attending physician sign-off workflow with cryptographic audit stamp minting.
 
 ---
 

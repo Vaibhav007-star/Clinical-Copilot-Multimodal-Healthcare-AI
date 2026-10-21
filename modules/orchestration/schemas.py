@@ -2,7 +2,7 @@
 Data schemas for Unified Clinical Case Review & Orchestration.
 Maintains strict provenance tracking across imaging, patient risk, and guidelines.
 """
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 from pydantic import BaseModel, Field
 from modules.imaging.schemas import ImagingAnalysisResult
 from modules.risk.schemas import RiskAssessmentResult, PatientClinicalInput
@@ -31,6 +31,12 @@ class UnifiedCaseSummary(BaseModel):
     unresolved_uncertainties: List[str] = Field(default_factory=list)
     conflicts_or_warnings: List[str] = Field(default_factory=list)
     missing_data_notices: List[str] = Field(default_factory=list)
+    
+    # Advanced Synthesis Extensions
+    differential_diagnosis: Optional[Any] = None
+    multi_scores: Optional[Any] = None
+    safety_review: Optional[Any] = None
+    clinician_attestation: Optional[Dict[str, Any]] = None
     
     overall_status: str = Field("INCOMPLETE", description="COMPLETE, PARTIAL, or INCOMPLETE")
     governance_statement: str = Field(

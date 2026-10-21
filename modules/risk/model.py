@@ -215,5 +215,9 @@ class ClinicalRiskModel:
             is_demonstration=False
         )
 
+    def predict_risk(self, patient: PatientClinicalInput) -> RiskAssessmentResult:
+        """Alias for predict method."""
+        return self.predict(patient)
+
 # Global singleton risk model instance
 risk_service = ClinicalRiskModel()

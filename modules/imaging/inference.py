@@ -3,7 +3,7 @@ Medical Imaging Inference Module for Chest X-Ray (CXR) Analysis.
 Features multi-pathology screening, confidence calibration, and Grad-CAM saliency localization.
 """
 from pathlib import Path
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Dict
 import io
 import numpy as np
 from PIL import Image
@@ -161,35 +161,49 @@ class ChestXRayModel:
             # Top abnormality index for Grad-CAM
             top_idx = PATHOLOGY_CLASSES.index(top_finding)
 
-            # Generate Grad-CAM Heatmap
+            # Generate Grad-CAM Heatmaps
             heatmap_saved_path = None
             vis_available = False
+            available_heatmaps: Dict[str, str] = {}
             
+            heatmap_dir = settings.data_dir / "sample_images" / "heatmaps"
+            heatmap_dir.mkdir(parents=True, exist_ok=True)
+            clean_name = Path(filename).stem
+            orig_np = np.array(image.convert("RGB"))
+
             if self.grad_cam:
+                # Generate CAM for the top finding
                 cam = self.grad_cam.generate(input_tensor, top_idx)
-                
-                # Resize CAM to match original image dimensions
                 cam_pil = Image.fromarray(np.uint8(255 * cam)).resize((w, h), Image.Resampling.BILINEAR)
                 cam_np = np.array(cam_pil) / 255.0
-                
-                # Apply JET colormap
                 colormap = matplotlib.colormaps['jet']
-                heatmap_rgb = colormap(cam_np)[:, :, :3]  # (H, W, 3)
-                heatmap_rgb = np.uint8(255 * heatmap_rgb)
-                
-                # Alpha blend heatmap over original image
-                orig_np = np.array(image.convert("RGB"))
+                heatmap_rgb = np.uint8(255 * colormap(cam_np)[:, :, :3])
                 blended = np.uint8(0.6 * orig_np + 0.4 * heatmap_rgb)
                 blended_pil = Image.fromarray(blended)
                 
-                # Save to disk
-                heatmap_dir = settings.data_dir / "sample_images" / "heatmaps"
-                heatmap_dir.mkdir(parents=True, exist_ok=True)
-                clean_name = Path(filename).stem
                 heatmap_file = heatmap_dir / f"{clean_name}_gradcam.png"
                 blended_pil.save(heatmap_file)
                 heatmap_saved_path = str(heatmap_file)
+                available_heatmaps[top_finding] = str(heatmap_file)
                 vis_available = True
+
+                # Pre-generate heatmaps for other prominent findings (conf >= 0.25 or top 3)
+                for f_item in findings[:3]:
+                    p_name = f_item.finding
+                    if p_name == top_finding:
+                        continue
+                    try:
+                        p_idx = PATHOLOGY_CLASSES.index(p_name)
+                        p_cam = self.grad_cam.generate(input_tensor, p_idx)
+                        p_cam_pil = Image.fromarray(np.uint8(255 * p_cam)).resize((w, h), Image.Resampling.BILINEAR)
+                        p_cam_np = np.array(p_cam_pil) / 255.0
+                        p_heatmap_rgb = np.uint8(255 * colormap(p_cam_np)[:, :, :3])
+                        p_blended = np.uint8(0.6 * orig_np + 0.4 * p_heatmap_rgb)
+                        p_file = heatmap_dir / f"{clean_name}_{p_name.replace(' ', '_').replace('/', '_')}_cam.png"
+                        Image.fromarray(p_blended).save(p_file)
+                        available_heatmaps[p_name] = str(p_file)
+                    except Exception:
+                        pass
 
             # Clinical uncertainty check
             if top_conf < 0.50:
@@ -208,6 +222,7 @@ class ChestXRayModel:
                 top_confidence=top_conf,
                 visualization_available=vis_available,
                 heatmap_path=heatmap_saved_path,
+                available_heatmaps=available_heatmaps,
                 warnings=warnings,
                 is_demonstration=False
             )

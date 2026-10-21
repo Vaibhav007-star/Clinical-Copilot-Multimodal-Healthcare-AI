@@ -31,3 +31,5 @@ chroma_db/
 # Logs & scratch
 *.log
 scratch/
+data/sample_images/heatmaps/test_*
+data/sample_images/heatmaps/*_test_*

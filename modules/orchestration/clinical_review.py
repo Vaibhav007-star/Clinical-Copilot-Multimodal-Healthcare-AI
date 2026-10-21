@@ -116,6 +116,36 @@ class ClinicalReviewOrchestrator:
                     "Evaluate for atypical lower respiratory infection."
                 )
 
+        # Generate Advanced Syntheses if sufficient data available
+        multi_scores_data = None
+        ddx_data = None
+        safety_data = None
+
+        if patient_input:
+            try:
+                from modules.risk.calculators import compute_multi_score_panel
+                from modules.rag.safety import safety_guardrail_service
+                multi_scores_data = compute_multi_score_panel(patient_input).model_dump()
+                safety_data = safety_guardrail_service.evaluate_patient_safety(patient_input).model_dump()
+            except Exception:
+                pass
+
+        if patient_input or (imaging_result and imaging_result.inference_status == "SUCCESS"):
+            try:
+                from modules.orchestration.ddx import ddx_engine
+                from modules.risk.calculators import compute_multi_score_panel
+                m_panel = compute_multi_score_panel(patient_input) if patient_input else None
+                ddx_obj = ddx_engine.generate_ddx(
+                    case_id=case_id,
+                    patient=patient_input,
+                    imaging=imaging_result,
+                    risk=risk_result,
+                    multi_scores=m_panel
+                )
+                ddx_data = ddx_obj.model_dump()
+            except Exception:
+                pass
+
         # Status determination
         if patient_input and imaging_result and risk_result:
             overall_status = "COMPLETE"
@@ -136,6 +166,9 @@ class ClinicalReviewOrchestrator:
             unresolved_uncertainties=uncertainties,
             conflicts_or_warnings=conflicts,
             missing_data_notices=missing_notices,
+            differential_diagnosis=ddx_data,
+            multi_scores=multi_scores_data,
+            safety_review=safety_data,
             overall_status=overall_status
         )
 

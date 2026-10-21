@@ -22,7 +22,7 @@ class PatientClinicalInput(BaseModel):
     resting_bp: int = Field(..., ge=70, le=240, description="Resting Blood Pressure in mm Hg (70-240)")
     cholesterol: int = Field(..., ge=80, le=600, description="Serum Cholesterol in mg/dL (80-600)")
     fasting_bs: Literal[0, 1] = Field(..., description="Fasting Blood Sugar > 120 mg/dl (1: True, 0: False)")
-    max_hr: int = Field(..., ge=50, le=220, description="Maximum Heart Rate achieved (50-220 bpm)")
+    max_hr: int = Field(..., ge=30, le=220, description="Maximum Heart Rate achieved (30-220 bpm)")
     
     # Electrocardiography
     resting_ecg: Literal["Normal", "ST", "LVH"] = Field(

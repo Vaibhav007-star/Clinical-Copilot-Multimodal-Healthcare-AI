@@ -22,8 +22,17 @@ from modules.risk.model import risk_service
 from modules.rag.schemas import GuidelineAnswer
 from modules.rag.generation import guideline_service
 from modules.rag.retrieval import retrieval_service
+from modules.rag.safety import safety_guardrail_service
+from modules.risk.calculators import (
+    compute_multi_score_panel,
+    run_counterfactual_simulation,
+    CounterfactualSimulationRequest,
+    MultiScoreSummary
+)
 from modules.orchestration.schemas import UnifiedCaseSummary
 from modules.orchestration.clinical_review import orchestrator_service
+from modules.orchestration.ddx import ddx_engine
+from modules.orchestration.fhir import fhir_service
 
 app = FastAPI(
     title="Clinical Copilot Web API",
@@ -50,6 +59,11 @@ class ReviewPayload(BaseModel):
     imaging_result: Optional[ImagingAnalysisResult] = None
     risk_result: Optional[RiskAssessmentResult] = None
     guideline_answers: List[GuidelineAnswer] = []
+
+@app.get("/health")
+def health_check():
+    """Liveness probe endpoint."""
+    return {"status": "healthy"}
 
 @app.get("/api/status")
 def get_system_status():
@@ -178,14 +192,22 @@ async def analyze_image(
 
     # Encode heatmap overlay to Base64 if available
     heatmap_b64 = None
-    if result.visualization_available and result.heatmap_path and Path(result.heatmap_path).exists():
-        h_bytes = Path(result.heatmap_path).read_bytes()
-        heatmap_b64 = f"data:image/png;base64,{base64.b64encode(h_bytes).decode()}"
+    heatmaps_by_pathology: dict[str, str] = {}
+    if result.visualization_available:
+        if result.heatmap_path and Path(result.heatmap_path).exists():
+            h_bytes = Path(result.heatmap_path).read_bytes()
+            heatmap_b64 = f"data:image/png;base64,{base64.b64encode(h_bytes).decode()}"
+        
+        for p_name, p_path in getattr(result, "available_heatmaps", {}).items():
+            if Path(p_path).exists():
+                p_b64 = f"data:image/png;base64,{base64.b64encode(Path(p_path).read_bytes()).decode()}"
+                heatmaps_by_pathology[p_name] = p_b64
 
     return {
         "analysis": result.model_dump(),
         "original_image_base64": original_b64,
-        "heatmap_base64": heatmap_b64
+        "heatmap_base64": heatmap_b64,
+        "heatmaps_by_pathology": heatmaps_by_pathology
     }
 
 @app.post("/api/risk/predict")
@@ -193,6 +215,82 @@ def predict_risk(patient: PatientClinicalInput):
     """Predicts calibrated cardiovascular risk using Kaggle-trained Gradient Boosting model."""
     result = risk_service.predict(patient)
     return result.model_dump()
+
+@app.post("/api/risk/calculators")
+def get_multi_scores(patient: PatientClinicalInput):
+    """Calculates Framingham 10-Yr ASCVD, CURB-65 Pneumonia, Wells PE, and CHA2DS2-VASc scores."""
+    scores = compute_multi_score_panel(patient)
+    return scores.model_dump()
+
+@app.post("/api/risk/simulate")
+def simulate_counterfactual_risk(req: CounterfactualSimulationRequest):
+    """Simulates What-If clinical adjustments and computes ARR, RRR, and NNT metrics."""
+    result = run_counterfactual_simulation(req)
+    return result.model_dump()
+
+@app.post("/api/safety/review")
+def review_pharmacotherapy_safety(patient: PatientClinicalInput):
+    """Evaluates guideline drug safety contraindications and black-box precautions."""
+    result = safety_guardrail_service.evaluate_patient_safety(patient)
+    return result.model_dump()
+
+@app.post("/api/ddx")
+def generate_differential_diagnosis(payload: ReviewPayload):
+    """Generates ranked multimodal Differential Diagnoses (DDx) with ICD-10 codes & workup."""
+    multi_panel = compute_multi_score_panel(payload.patient_input) if payload.patient_input else None
+    ddx = ddx_engine.generate_ddx(
+        case_id=payload.case_id,
+        patient=payload.patient_input,
+        imaging=payload.imaging_result,
+        risk=payload.risk_result,
+        multi_scores=multi_panel
+    )
+    return ddx.model_dump()
+
+@app.post("/api/export/fhir")
+def export_fhir_bundle(payload: ReviewPayload):
+    """Exports a standardized HL7 FHIR Release 4 (R4) JSON document bundle for EHR ingestion."""
+    multi_panel = compute_multi_score_panel(payload.patient_input) if payload.patient_input else None
+    ddx = ddx_engine.generate_ddx(
+        case_id=payload.case_id,
+        patient=payload.patient_input,
+        imaging=payload.imaging_result,
+        risk=payload.risk_result,
+        multi_scores=multi_panel
+    )
+    bundle = fhir_service.build_fhir_r4_bundle(
+        case_id=payload.case_id,
+        patient=payload.patient_input,
+        imaging=payload.imaging_result,
+        risk=payload.risk_result,
+        ddx=ddx,
+        multi_scores=multi_panel
+    )
+    return bundle
+
+class AttestationPayload(BaseModel):
+    case_id: str
+    clinician_name: str
+    npi_or_license: str
+    institution: str
+    decision_status: str
+    notes: Optional[str] = ""
+
+@app.post("/api/attestation/sign")
+def sign_clinical_case(attestation: AttestationPayload):
+    """Records clinician electronic attestation and clinical decision audit stamp."""
+    from datetime import datetime, timezone
+    return {
+        "status": "ATTESTED",
+        "case_id": attestation.case_id,
+        "clinician_name": attestation.clinician_name,
+        "npi_or_license": attestation.npi_or_license,
+        "institution": attestation.institution,
+        "decision_status": attestation.decision_status,
+        "notes": attestation.notes,
+        "signed_at": datetime.now(timezone.utc).isoformat(),
+        "audit_stamp": f"SIG-{hash(attestation.case_id + attestation.clinician_name) & 0xFFFFFFFF:08X}"
+    }
 
 @app.post("/api/guidelines/query")
 def query_guidelines(req: QueryRequest):

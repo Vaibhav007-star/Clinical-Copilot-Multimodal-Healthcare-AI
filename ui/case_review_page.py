@@ -89,6 +89,18 @@ def render_case_review_page():
             st.warning("No multimodal data has been submitted yet. Navigate to Imaging or Risk to enter patient data.")
 
     with tab_synthesis:
+        if summary.differential_diagnosis:
+            ddx = summary.differential_diagnosis
+            prim = ddx.get("primary_diagnosis", {})
+            st.markdown(f"### 🩺 Primary Working Diagnosis: {prim.get('condition_name', 'N/A')}")
+            col_d1, col_d2 = st.columns(2)
+            with col_d1:
+                st.info(f"**ICD-10 Code:** `{prim.get('icd10_code', 'N/A')}` | **Likelihood:** {prim.get('probability_estimate_pct', 0)}%")
+            with col_d2:
+                st.caption(f"**Confirmatory Diagnostic Criteria:** {prim.get('confirmatory_criteria', 'N/A')}")
+            st.markdown(f"*{prim.get('pathophysiological_summary', '')}*")
+            st.markdown("---")
+
         st.subheader("Multimodal Clinical Correlation & Synthesis")
         if summary.clinical_synthesis_notes:
             for note in summary.clinical_synthesis_notes:
@@ -165,10 +177,26 @@ GOVERNANCE DISCLAIMER:
 ================================================================================
 """
         st.text_area("Case Summary Preview", value=report_text, height=260)
-        st.download_button(
-            label="Download Structured Case Report (.txt)",
-            data=report_text,
-            file_name=f"clinical_copilot_case_{summary.case_id.lower()}.txt",
-            mime="text/plain",
-            type="primary"
-        )
+        col_btn1, col_btn2 = st.columns(2)
+        with col_btn1:
+            st.download_button(
+                label="Download Structured Case Report (.txt)",
+                data=report_text,
+                file_name=f"clinical_copilot_case_{summary.case_id.lower()}.txt",
+                mime="text/plain",
+                type="primary",
+                use_container_width=True
+            )
+        with col_btn2:
+            import json
+            from modules.orchestration.fhir import fhir_service
+            from modules.orchestration.ddx import ddx_engine
+            ddx_obj = ddx_engine.generate_ddx(case_id=summary.case_id, patient=patient_input, imaging=imaging_result, risk=risk_result)
+            fhir_bundle = fhir_service.build_fhir_r4_bundle(case_id=summary.case_id, patient=patient_input, imaging=imaging_result, risk=risk_result, ddx=ddx_obj)
+            st.download_button(
+                label="Download HL7 FHIR R4 Bundle (.json)",
+                data=json.dumps(fhir_bundle, indent=2),
+                file_name=f"case_{summary.case_id.lower()}_fhir_r4.json",
+                mime="application/json",
+                use_container_width=True
+            )

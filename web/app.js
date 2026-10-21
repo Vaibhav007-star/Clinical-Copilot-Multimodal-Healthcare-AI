@@ -36,6 +36,8 @@ document.addEventListener('DOMContentLoaded', () => {
     initGuidelinesStudio();
     initResetButton();
     fetchSystemStatus();
+    computeActiveMultiScores(appState.activePatient);
+    loadPharmacotherapySafety(appState.activePatient);
 });
 
 /* ==========================================================================
@@ -152,6 +154,10 @@ function loadPreset(presetId) {
     // Populate suggested query
     document.getElementById('guidelineQueryInput').value = preset.suggested_query;
 
+    // Refresh advanced modules for new preset
+    computeActiveMultiScores(preset.patient);
+    loadPharmacotherapySafety(preset.patient);
+
     showToast(`Loaded ${preset.title}! Navigate to Imaging or Risk to inspect.`);
 }
 
@@ -260,6 +266,20 @@ function initImagingStudio() {
             heatmapImg.style.opacity = val / 100;
         }
     });
+
+    // Windowing Preset Handlers
+    document.querySelectorAll('.win-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.win-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            const win = btn.getAttribute('data-win');
+            const baseImg = document.getElementById('cxrBaseImage');
+            baseImg.className = '';
+            if (win && win !== 'default') {
+                baseImg.classList.add(`win-${win}`);
+            }
+        });
+    });
 }
 
 function handleImageSelection(file, sampleName) {
@@ -324,6 +344,7 @@ async function executeImagingAnalysis() {
 
         const data = await res.json();
         appState.imagingResult = data.analysis;
+        appState.heatmapsByPathology = data.heatmaps_by_pathology || {};
 
         // Render base and heatmap
         if (data.original_image_base64) {
@@ -335,6 +356,31 @@ async function executeImagingAnalysis() {
             heatmapImg.style.display = 'block';
             heatmapImg.style.opacity = '0.7';
             document.getElementById('sliderWrapper').style.display = 'flex';
+        }
+
+        // Show windowing toolbar
+        document.getElementById('windowingToolbar').style.display = 'flex';
+
+        // Render Multi-Pathology CAM focus chips
+        const selectorRow = document.getElementById('pathologyCamSelector');
+        const chipsRow = document.getElementById('pathologyChipsRow');
+        if (data.heatmaps_by_pathology && Object.keys(data.heatmaps_by_pathology).length > 0) {
+            selectorRow.style.display = 'flex';
+            chipsRow.innerHTML = '';
+            Object.keys(data.heatmaps_by_pathology).forEach((pName, idx) => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = `cam-chip ${pName === data.analysis.top_finding ? 'active' : ''}`;
+                btn.textContent = pName;
+                btn.onclick = () => {
+                    document.querySelectorAll('.cam-chip').forEach(c => c.classList.remove('active'));
+                    btn.classList.add('active');
+                    const heatmapImg = document.getElementById('cxrHeatmapImage');
+                    heatmapImg.src = data.heatmaps_by_pathology[pName];
+                    heatmapImg.style.display = 'block';
+                };
+                chipsRow.appendChild(btn);
+            });
         }
 
         // Render Findings Card & Chart
@@ -476,6 +522,12 @@ async function calculateRisk() {
 
         // Render Gauge & Features
         renderRiskResults(data);
+
+        // Run Advanced Multi-Scores, Counterfactual Simulation & Safety
+        computeActiveMultiScores(patient);
+        initSimulationSliders(patient, data.risk_score * 100);
+        loadPharmacotherapySafety(patient);
+
         showToast('Cardiovascular Risk Computed via Kaggle-Trained Model!');
     } catch (e) {
         showToast(e.message, 'error');
@@ -526,6 +578,185 @@ function renderRiskResults(data) {
         `;
         tbody.appendChild(tr);
     });
+}
+
+/* ==========================================================================
+   Advanced Clinical Calculators & Multi-Score Panel
+   ========================================================================== */
+async function computeActiveMultiScores(patient = appState.activePatient) {
+    try {
+        const res = await fetch('/api/risk/calculators', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(patient)
+        });
+        if (!res.ok) return;
+        const scores = await res.json();
+        appState.multiScores = scores;
+
+        // ASCVD
+        document.getElementById('sc_ascvd_badge').textContent = `${scores.ascvd.ten_year_risk_pct}%`;
+        document.getElementById('sc_ascvd_val').textContent = `${scores.ascvd.ten_year_risk_pct}%`;
+        document.getElementById('sc_ascvd_cat').textContent = scores.ascvd.risk_category;
+        document.getElementById('sc_ascvd_rec').textContent = scores.ascvd.clinical_recommendation;
+
+        // CURB-65
+        document.getElementById('sc_curb_badge').textContent = `Score: ${scores.curb65.score}`;
+        document.getElementById('sc_curb_val').textContent = `${scores.curb65.score} / 5`;
+        document.getElementById('sc_curb_tier').textContent = `${scores.curb65.risk_tier} (30d Mort: ${scores.curb65.mortality_risk_pct}%)`;
+        document.getElementById('sc_curb_site').textContent = scores.curb65.site_of_care_recommendation;
+
+        // Wells PE
+        document.getElementById('sc_wells_badge').textContent = `Score: ${scores.wells_pe.score}`;
+        document.getElementById('sc_wells_val').textContent = `${scores.wells_pe.score} pts`;
+        document.getElementById('sc_wells_tier').textContent = `${scores.wells_pe.risk_tier} (~${scores.wells_pe.probability_pct}%)`;
+        document.getElementById('sc_wells_rec').textContent = scores.wells_pe.recommended_workup;
+
+        // CHA2DS2-VASc
+        document.getElementById('sc_cha_badge').textContent = `Score: ${scores.cha2ds2_vasc.score}`;
+        document.getElementById('sc_cha_val').textContent = `${scores.cha2ds2_vasc.score} pts`;
+        document.getElementById('sc_cha_cat').textContent = `Annual Stroke Risk: ${scores.cha2ds2_vasc.annual_stroke_risk_pct}%`;
+        document.getElementById('sc_cha_rec').textContent = scores.cha2ds2_vasc.anticoagulation_recommendation;
+    } catch (e) {
+        console.warn('Error computing multi-scores:', e);
+    }
+}
+
+/* ==========================================================================
+   Interactive What-If Counterfactual Simulator
+   ========================================================================== */
+function initSimulationSliders(patient, baselineRiskPct) {
+    document.getElementById('sim_sbp').value = Math.min(190, Math.max(100, patient.resting_bp || 135));
+    document.getElementById('sim_sbp_val').textContent = `${patient.resting_bp || 135} mmHg`;
+    document.getElementById('sim_chol').value = Math.min(350, Math.max(130, patient.cholesterol || 230));
+    document.getElementById('sim_chol_val').textContent = `${patient.cholesterol || 230} mg/dL`;
+    document.getElementById('sim_hr').value = Math.min(200, Math.max(80, patient.max_hr || 145));
+    document.getElementById('sim_hr_val').textContent = `${patient.max_hr || 145} bpm`;
+    document.getElementById('sim_fasting_bs').checked = (patient.fasting_bs === 0);
+    document.getElementById('sim_angina_resolved').checked = (patient.exercise_angina === 'N');
+
+    document.getElementById('sim_base_risk').textContent = `${baselineRiskPct.toFixed(1)}%`;
+    runCounterfactualSimulation();
+}
+
+let simDebounceTimer = null;
+function onSimulationSliderChange() {
+    const sbp = document.getElementById('sim_sbp').value;
+    const chol = document.getElementById('sim_chol').value;
+    const hr = document.getElementById('sim_hr').value;
+    document.getElementById('sim_sbp_val').textContent = `${sbp} mmHg`;
+    document.getElementById('sim_chol_val').textContent = `${chol} mg/dL`;
+    document.getElementById('sim_hr_val').textContent = `${hr} bpm`;
+
+    clearTimeout(simDebounceTimer);
+    simDebounceTimer = setTimeout(runCounterfactualSimulation, 150);
+}
+
+async function runCounterfactualSimulation() {
+    try {
+        const payload = {
+            baseline_patient: appState.activePatient,
+            target_resting_bp: parseInt(document.getElementById('sim_sbp').value),
+            target_cholesterol: parseInt(document.getElementById('sim_chol').value),
+            target_max_hr: parseInt(document.getElementById('sim_hr').value),
+            target_fasting_bs: document.getElementById('sim_fasting_bs').checked ? 0 : 1,
+            target_exercise_angina: document.getElementById('sim_angina_resolved').checked ? 'N' : 'Y'
+        };
+
+        const res = await fetch('/api/risk/simulate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) return;
+        const result = await res.json();
+
+        document.getElementById('sim_base_risk').textContent = `${result.baseline_risk_pct}%`;
+        document.getElementById('sim_target_risk').textContent = `${result.counterfactual_risk_pct}%`;
+        document.getElementById('sim_arr_chip').textContent = `ARR: -${result.absolute_risk_reduction_pct}%`;
+        document.getElementById('sim_rrr_chip').textContent = `RRR: -${result.relative_risk_reduction_pct}%`;
+        document.getElementById('sim_nnt_chip').textContent = result.number_needed_to_treat ? `NNT: ${result.number_needed_to_treat}` : 'NNT: N/A';
+        document.getElementById('sim_summary_text').textContent = result.interpretation;
+
+        // Render interventions
+        const wrapper = document.getElementById('simInterventionsWrapper');
+        const list = document.getElementById('simInterventionsList');
+        if (result.top_interventions && result.top_interventions.length > 0) {
+            wrapper.style.display = 'block';
+            list.innerHTML = '';
+            result.top_interventions.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'intervention-item';
+                div.innerHTML = `
+                    <div class="intervention-item-header">
+                        <span>${item.factor_name}</span>
+                        <span class="intervention-gain">-${item.risk_reduction_pct}% Risk</span>
+                    </div>
+                    <div style="color:#94a3b8; font-size:0.75rem; margin-bottom:2px;">
+                        Baseline: <code>${item.baseline_value}</code> &rarr; Target: <code>${item.target_value}</code>
+                    </div>
+                    <div class="intervention-note">${item.clinical_note}</div>
+                `;
+                list.appendChild(div);
+            });
+        } else {
+            wrapper.style.display = 'none';
+        }
+    } catch (e) {
+        console.warn('Simulation error:', e);
+    }
+}
+
+/* ==========================================================================
+   Pharmacotherapy Safety Guardrail Review
+   ========================================================================== */
+async function loadPharmacotherapySafety(patient = appState.activePatient) {
+    try {
+        const res = await fetch('/api/safety/review', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(patient)
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        appState.safetyReview = data;
+
+        const badge = document.getElementById('safetyStatusBadge');
+        if (data.has_critical_blocker) {
+            badge.textContent = 'Critical Contraindication';
+            badge.className = 'badge badge-rose';
+        } else if (data.total_alerts > 0) {
+            badge.textContent = `${data.total_alerts} Active Advisories`;
+            badge.className = 'badge badge-amber';
+        } else {
+            badge.textContent = 'Standard Safety Verified';
+            badge.className = 'badge badge-emerald';
+        }
+
+        const container = document.getElementById('safetyAlertsContainer');
+        container.innerHTML = '';
+        data.alerts.forEach(alert => {
+            const card = document.createElement('div');
+            const sevClass = alert.severity.includes('CRITICAL') ? 'critical' : (alert.severity.includes('HIGH') ? 'high' : 'advisory');
+            const badgeClass = alert.severity.includes('CRITICAL') ? 'badge-rose' : (alert.severity.includes('HIGH') ? 'badge-amber' : 'badge-cyan');
+            card.className = `safety-alert-card ${sevClass}`;
+            card.innerHTML = `
+                <div class="safety-card-header">
+                    <span class="safety-drug-name">${alert.drug_class}</span>
+                    <span class="badge ${badgeClass}">${alert.severity}</span>
+                </div>
+                <div class="safety-rationale">${alert.contraindication_rationale}</div>
+                <div class="safety-source-rec">
+                    <span><strong>Source:</strong> ${alert.guideline_source}</span>
+                    <span><strong>Clinical Action:</strong> ${alert.recommended_alternative_action}</span>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    } catch (e) {
+        console.warn('Safety review error:', e);
+    }
 }
 
 function resetRiskGauge() {
@@ -664,6 +895,121 @@ async function refreshUnifiedReview() {
         badge.textContent = summary.overall_status;
         badge.className = `badge ${summary.overall_status === 'COMPLETE' ? 'badge-emerald' : 'badge-amber'}`;
 
+        // Render Clinician Attestation Stamp if attested
+        const stampBox = document.getElementById('attestationStampBox');
+        if (appState.attestation) {
+            stampBox.style.display = 'flex';
+            document.getElementById('stampStatus').textContent = `CLINICAL ATTESTATION: ${appState.attestation.decision_status.toUpperCase()}`;
+            document.getElementById('stampAuditId').textContent = appState.attestation.audit_stamp;
+            document.getElementById('stampDetails').textContent = `Attending: ${appState.attestation.clinician_name} | ${appState.attestation.npi_or_license} | ${appState.attestation.institution} | Signed: ${new Date(appState.attestation.signed_at).toLocaleString()}`;
+        } else {
+            stampBox.style.display = 'none';
+        }
+
+        // Render Multimodal Differential Diagnosis (DDx)
+        if (summary.differential_diagnosis) {
+            const ddx = summary.differential_diagnosis;
+            appState.differentialDiagnosis = ddx;
+
+            // Red Flags
+            const redFlagsBox = document.getElementById('redFlagsContainer');
+            if (ddx.red_flag_alerts && ddx.red_flag_alerts.length > 0) {
+                redFlagsBox.style.display = 'flex';
+                redFlagsBox.innerHTML = '';
+                ddx.red_flag_alerts.forEach(flag => {
+                    const d = document.createElement('div');
+                    d.className = 'red-flag-alert';
+                    d.innerHTML = `<span>🚨</span><span><strong>Clinical Warning:</strong> ${flag}</span>`;
+                    redFlagsBox.appendChild(d);
+                });
+            } else {
+                redFlagsBox.style.display = 'none';
+            }
+
+            // Primary Diagnosis
+            if (ddx.primary_diagnosis) {
+                document.getElementById('ddxPrimaryName').textContent = ddx.primary_diagnosis.condition_name;
+                document.getElementById('ddxIcdCode').textContent = `ICD-10: ${ddx.primary_diagnosis.icd10_code}`;
+                document.getElementById('ddxProbEst').textContent = `${ddx.primary_diagnosis.probability_estimate_pct}% Probability`;
+                document.getElementById('ddxPrimaryPatho').textContent = ddx.primary_diagnosis.pathophysiological_summary;
+
+                const suppBox = document.getElementById('ddxSupportingBox');
+                const suppList = document.getElementById('ddxSupportingList');
+                if (ddx.primary_diagnosis.supporting_findings && ddx.primary_diagnosis.supporting_findings.length > 0) {
+                    suppBox.style.display = 'block';
+                    suppList.innerHTML = '';
+                    ddx.primary_diagnosis.supporting_findings.forEach(sf => {
+                        const li = document.createElement('li');
+                        li.textContent = sf;
+                        suppList.appendChild(li);
+                    });
+                } else {
+                    suppBox.style.display = 'none';
+                }
+            }
+
+            // Rival Diagnoses
+            const rivalList = document.getElementById('ddxRivalList');
+            rivalList.innerHTML = '';
+            if (ddx.secondary_diagnoses && ddx.secondary_diagnoses.length > 0) {
+                ddx.secondary_diagnoses.forEach(r => {
+                    const item = document.createElement('div');
+                    item.className = 'rival-item';
+                    item.innerHTML = `
+                        <div class="item-top-row">
+                            <span>${r.condition_name}</span>
+                            <span class="badge badge-purple">${r.icd10_code} (${r.probability_estimate_pct}%)</span>
+                        </div>
+                        <div class="item-desc">${r.pathophysiological_summary}</div>
+                    `;
+                    rivalList.appendChild(item);
+                });
+            } else {
+                rivalList.innerHTML = '<p class="text-secondary" style="font-size:0.85rem;">No rival conditions currently flagged.</p>';
+            }
+
+            // Ruled-out conditions
+            const ruledList = document.getElementById('ddxRuledOutList');
+            ruledList.innerHTML = '';
+            if (ddx.ruled_out_conditions && ddx.ruled_out_conditions.length > 0) {
+                ddx.ruled_out_conditions.forEach(ro => {
+                    const item = document.createElement('div');
+                    item.className = 'ruled-out-item';
+                    item.innerHTML = `
+                        <div class="item-top-row">
+                            <span>${ro.condition_name}</span>
+                            <span class="badge badge-cyan">${ro.icd10_code}</span>
+                        </div>
+                        <div class="item-desc">${ro.rationale}</div>
+                    `;
+                    ruledList.appendChild(item);
+                });
+            } else {
+                ruledList.innerHTML = '<p class="text-secondary" style="font-size:0.85rem;">None ruled out.</p>';
+            }
+
+            // Workup Orders
+            const workupCard = document.getElementById('workupCard');
+            const workupTbody = document.getElementById('workupTableBody');
+            if (ddx.recommended_workup && ddx.recommended_workup.length > 0) {
+                workupCard.style.display = 'block';
+                workupTbody.innerHTML = '';
+                ddx.recommended_workup.forEach(w => {
+                    const tr = document.createElement('tr');
+                    const badgeClass = w.urgency.includes('STAT') ? 'badge-rose' : (w.urgency.includes('Urgent') ? 'badge-amber' : 'badge-cyan');
+                    tr.innerHTML = `
+                        <td><strong>${w.test_name}</strong></td>
+                        <td>${w.category}</td>
+                        <td><span class="badge ${badgeClass}">${w.urgency}</span></td>
+                        <td>${w.clinical_justification}</td>
+                    `;
+                    workupTbody.appendChild(tr);
+                });
+            } else {
+                workupCard.style.display = 'none';
+            }
+        }
+
         // Correlation Alerts
         const alertBox = document.getElementById('correlationAlertBox');
         if (summary.clinical_synthesis_notes.length > 0) {
@@ -717,6 +1063,85 @@ async function refreshUnifiedReview() {
 
     } catch (e) {
         console.error('Error refreshing review:', e);
+    }
+}
+
+/* ==========================================================================
+   FHIR R4 Export & Clinician Attestation
+   ========================================================================== */
+async function exportFHIRBundle() {
+    const payload = {
+        case_id: appState.activePatient.patient_id || 'PT-1001',
+        patient_input: appState.activePatient,
+        imaging_result: appState.imagingResult,
+        risk_result: appState.riskResult,
+        guideline_answers: appState.guidelineAnswers
+    };
+
+    try {
+        const res = await fetch('/api/export/fhir', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error('FHIR export failed.');
+        const bundle = await res.json();
+        const jsonStr = JSON.stringify(bundle, null, 2);
+        const blob = new Blob([jsonStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `case_${payload.case_id.toLowerCase()}_fhir_r4.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('HL7 FHIR Release 4 JSON Bundle exported successfully!');
+    } catch (e) {
+        showToast(e.message, 'error');
+    }
+}
+
+function openAttestationModal() {
+    document.getElementById('attestCaseIdDisplay').textContent = appState.activePatient.patient_id || 'PT-1001';
+    document.getElementById('attestationModal').style.display = 'flex';
+}
+
+function closeAttestationModal() {
+    document.getElementById('attestationModal').style.display = 'none';
+}
+
+async function submitAttestation() {
+    const caseId = appState.activePatient.patient_id || 'PT-1001';
+    const payload = {
+        case_id: caseId,
+        clinician_name: document.getElementById('att_name').value,
+        npi_or_license: document.getElementById('att_npi').value,
+        institution: document.getElementById('att_inst').value,
+        decision_status: document.getElementById('att_status').value,
+        notes: document.getElementById('att_notes').value
+    };
+
+    try {
+        const res = await fetch('/api/attestation/sign', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error('Attestation failed.');
+        const data = await res.json();
+        appState.attestation = data;
+
+        closeAttestationModal();
+
+        // Show attestation stamp in review
+        const stampBox = document.getElementById('attestationStampBox');
+        stampBox.style.display = 'flex';
+        document.getElementById('stampStatus').textContent = `CLINICAL ATTESTATION: ${data.decision_status.toUpperCase()}`;
+        document.getElementById('stampAuditId').textContent = data.audit_stamp;
+        document.getElementById('stampDetails').textContent = `Attending: ${data.clinician_name} | ${data.npi_or_license} | ${data.institution} | Signed: ${new Date(data.signed_at).toLocaleString()}`;
+
+        showToast('Formal Attestation & Cryptographic Audit Stamp Recorded!');
+    } catch (e) {
+        showToast(e.message, 'error');
     }
 }
 
