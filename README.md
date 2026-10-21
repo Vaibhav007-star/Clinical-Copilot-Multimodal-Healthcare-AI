@@ -1,11 +1,14 @@
 # Clinical Copilot ⚕️
 ### Multimodal Clinical Assistant with Medical Imaging, Patient Risk Assessment, and RAG-Powered Clinical Guidelines
 
+[![Live Demo on Vercel](https://img.shields.io/badge/Live_Demo-Vercel-black?style=for-the-badge&logo=vercel)](https://clinical-copilot-healthcare-ai.vercel.app)
 [![Python 3.12](https://img.shields.io/badge/Python-3.12-blue.svg)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.4+-red.svg)](https://pytorch.org/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.38+-FF4B4B.svg)](https://streamlit.io/)
 [![Kaggle Dataset](https://img.shields.io/badge/Dataset-Kaggle%20Heart%20Failure-20BEFF.svg)](https://www.kaggle.com/datasets/fedesoriano/heart-failure-prediction)
 [![License](https://img.shields.io/badge/License-MIT%20Research-green.svg)](LICENSE)
+
+> 🌐 **Live Web Application:** **[https://clinical-copilot-healthcare-ai.vercel.app](https://clinical-copilot-healthcare-ai.vercel.app)**
 
 ---
 
