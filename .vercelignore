@@ -1,0 +1,18 @@
+# Virtual environments & python caches
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Testing & local dev files
+tests/
+pytest.ini
+requirements-dev.txt
+
+# Git, logs, & OS files
+.git/
+*.log
+.DS_Store
+Thumbs.db

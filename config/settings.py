@@ -52,4 +52,7 @@ for folder in [
     settings.vector_store_dir,
     settings.models_dir,
 ]:
-    folder.mkdir(parents=True, exist_ok=True)
+    try:
+        folder.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        pass

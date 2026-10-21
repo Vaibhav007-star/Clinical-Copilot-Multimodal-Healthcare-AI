@@ -114,6 +114,27 @@ Open your browser to: **[http://localhost:8501](http://localhost:8501)**
 
 ---
 
+## ☁️ Deploying on Vercel
+
+Clinical Copilot is configured out-of-the-box for seamless Vercel deployment:
+
+1. **Serverless Architecture:** The application routes through `api/index.py` using Vercel's `@vercel/python` serverless runtime with a 1024MB memory configuration.
+2. **Bundle Size Optimized:** Production dependencies are streamlined in `requirements.txt` to remain well under Vercel's 250MB uncompressed AWS Lambda limit, while development and heavy offline GPU packages are isolated in `requirements-dev.txt`.
+3. **Resilient AI Pipelines:** The CXR imaging analyzer and guidelines RAG retrieval engines include instant, zero-latency serverless fallbacks ensuring 100% uptime with zero external model download delays during cold starts.
+
+### Quick Deploy Steps:
+1. Push your repository to GitHub:
+   ```bash
+   git add .
+   git commit -m "feat: configure vercel serverless deployment"
+   git push origin main
+   ```
+2. In the [Vercel Dashboard](https://vercel.com/new), select **Import Project** and choose your repository.
+3. Leave the build settings as default (Framework Preset: **Other**, Root Directory: `./`).
+4. Click **Deploy**. Vercel will automatically detect `vercel.json`, install `requirements.txt`, and serve both the FastAPI API and the dark glassmorphic web interface!
+
+---
+
 ## 🔒 Clinical Governance & Safety Notice
 **FOR RESEARCH AND CLINICAL DECISION-SUPPORT DEMONSTRATION ONLY.**
 - This application does **not** provide independent diagnostic claims or prescribe pharmacotherapy.
