@@ -10,3 +10,4 @@ joblib>=1.4.0
 pillow>=10.4.0
 requests>=2.32.0
 python-multipart>=0.0.9
+pypdf>=4.3.0

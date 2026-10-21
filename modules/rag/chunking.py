@@ -5,7 +5,12 @@ Preserves page numbers, clinical section headings, and bibliographic metadata.
 from pathlib import Path
 from typing import List, Dict, Tuple, Optional
 import re
-from pypdf import PdfReader
+try:
+    from pypdf import PdfReader
+    HAS_PYPDF = True
+except ImportError:
+    HAS_PYPDF = False
+
 from modules.rag.schemas import DocumentChunk
 
 def extract_text_from_file(file_path: Path) -> List[Tuple[int, str]]:
@@ -17,6 +22,8 @@ def extract_text_from_file(file_path: Path) -> List[Tuple[int, str]]:
     suffix = file_path.suffix.lower()
     
     if suffix == ".pdf":
+        if not HAS_PYPDF:
+            return [(1, f"[PDF Document {file_path.name}]")]
         reader = PdfReader(str(file_path))
         for page_idx, page in enumerate(reader.pages):
             text = page.extract_text() or ""
