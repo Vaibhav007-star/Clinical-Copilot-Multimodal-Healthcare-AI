@@ -878,15 +878,27 @@ async function refreshUnifiedReview() {
     };
 
     try {
-        const res = await fetch('/api/orchestration/review', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
+        const [res, triageRes] = await Promise.all([
+            fetch('/api/orchestration/review', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }),
+            fetch('/api/orchestration/triage-soap', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+        ]);
 
         if (!res.ok) return;
         const summary = await res.json();
         window.currentSummary = summary;
+
+        if (triageRes.ok) {
+            const triageData = await triageRes.json();
+            renderTriageAndSoap(triageData);
+        }
 
         document.getElementById('reviewCaseTitle').textContent = `Case Summary: ${summary.case_id}`;
         document.getElementById('reviewTimestamp').textContent = `Review Timestamp: ${summary.timestamp}`;
@@ -1211,4 +1223,146 @@ function showToast(message, type = 'info') {
         toast.style.transform = 'translateX(100%)';
         setTimeout(() => toast.remove(), 300);
     }, 4000);
+}
+
+/* ==========================================================================
+   One-Click Multimodal Autopilot, Triage Radar & Clinical Documentation Studio
+   ========================================================================== */
+async function runFullMultimodalAutopilot() {
+    const btn = document.getElementById('btnAutopilotTriage');
+    const origText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = '⚡ Running Multimodal Pipeline...';
+
+    try {
+        if (!appState.imagingResult) {
+            const sampleName = appState.selectedSampleName || 'sample_cxr_cardiomegaly.png';
+            const formData = new FormData();
+            formData.append('sample_name', sampleName);
+            const imgRes = await fetch('/api/imaging/analyze', { method: 'POST', body: formData });
+            if (imgRes.ok) {
+                const imgData = await imgRes.json();
+                appState.imagingResult = imgData.analysis;
+                renderImagingResults(imgData);
+            }
+        }
+
+        if (!appState.riskResult) {
+            const riskRes = await fetch('/api/risk/predict', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(appState.activePatient)
+            });
+            if (riskRes.ok) {
+                const riskData = await riskRes.json();
+                appState.riskResult = riskData;
+                renderRiskResults(riskData);
+            }
+        }
+
+        if (!appState.guidelineAnswers || appState.guidelineAnswers.length === 0) {
+            const query = appState.imagingResult && appState.imagingResult.top_finding === 'Pneumonia'
+                ? 'What are empirical antibiotic regimens for outpatient community-acquired pneumonia?'
+                : 'What are the indications for chest radiography in chest pain evaluation?';
+            const ragRes = await fetch('/api/guidelines/query', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query, top_k: 2 })
+            });
+            if (ragRes.ok) {
+                const ragData = await ragRes.json();
+                appState.guidelineAnswers = [ragData];
+            }
+        }
+
+        navigateTo('view-review');
+        showToast('Full Multimodal Triage Pipeline Completed!');
+    } catch (e) {
+        showToast('Autopilot error: ' + e.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = origText;
+    }
+}
+
+function renderTriageAndSoap(data) {
+    appState.triageSoap = data;
+    appState.activeDocTab = appState.activeDocTab || 'soap';
+
+    const esiBadge = document.getElementById('triageEsiBadge');
+    esiBadge.textContent = data.esi_label;
+    esiBadge.className = 'badge ' + (data.esi_level <= 2 ? 'badge-rose' : data.esi_level === 3 ? 'badge-amber' : 'badge-emerald');
+
+    document.getElementById('triageAcuityVal').textContent = `${data.acuity_score} / 100`;
+    document.getElementById('triageDispositionText').textContent = data.disposition;
+
+    const ctx = document.getElementById('triageRadarChart').getContext('2d');
+    if (appState.triageRadarChart) {
+        appState.triageRadarChart.destroy();
+    }
+    appState.triageRadarChart = new Chart(ctx, {
+        type: 'radar',
+        data: {
+            labels: data.axes.map(a => a.axis),
+            datasets: [{
+                label: 'Clinical Acuity Burden (%)',
+                data: data.axes.map(a => a.score),
+                backgroundColor: 'rgba(56, 189, 248, 0.22)',
+                borderColor: '#38bdf8',
+                pointBackgroundColor: '#22d3ee',
+                pointBorderColor: '#0f172a',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                r: {
+                    min: 0,
+                    max: 100,
+                    ticks: { stepSize: 25, color: '#94a3b8', backdropColor: 'transparent', font: { size: 10 } },
+                    grid: { color: 'rgba(148, 163, 184, 0.18)' },
+                    angleLines: { color: 'rgba(148, 163, 184, 0.18)' },
+                    pointLabels: { color: '#e2e8f0', font: { size: 11, weight: '600' } }
+                }
+            },
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+
+    updateClinicalNotePreview();
+}
+
+function switchDocTab(tab) {
+    appState.activeDocTab = tab;
+    document.querySelectorAll('.doc-tab').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-doc') === tab);
+    });
+    updateClinicalNotePreview();
+}
+
+function updateClinicalNotePreview() {
+    const data = appState.triageSoap;
+    if (!data) return;
+    const preview = document.getElementById('clinicalNotePreview');
+    if (appState.activeDocTab === 'sbar') {
+        preview.textContent = data.sbar_handoff;
+    } else if (appState.activeDocTab === 'patient') {
+        preview.textContent = data.patient_summary;
+    } else {
+        preview.textContent = data.soap_note;
+    }
+}
+
+function copyActiveClinicalNote() {
+    const text = document.getElementById('clinicalNotePreview').textContent;
+    if (!text) return;
+    navigator.clipboard.writeText(text).then(() => {
+        showToast('Clinical note copied to clipboard.');
+    }).catch(() => {
+        showToast('Could not copy to clipboard.', 'error');
+    });
 }

@@ -1869,3 +1869,83 @@ img.win-invert {
     background: rgba(15, 23, 42, 0.4);
 }
 
+/* ==========================================================================
+   Multimodal Triage Radar & Clinical Documentation Studio
+   ========================================================================== */
+.triage-soap-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.25fr;
+    gap: 20px;
+}
+
+@media (max-width: 1024px) {
+    .triage-soap-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.triage-acuity-bar {
+    background: rgba(15, 23, 42, 0.55);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 12px 16px;
+    margin-top: 12px;
+}
+
+.acuity-score-label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-right: 6px;
+}
+
+.acuity-score-val {
+    font-family: var(--font-heading);
+    font-size: 1.25rem;
+    color: var(--accent-cyan);
+}
+
+.triage-disposition {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    margin-top: 4px;
+}
+
+.doc-tabs-row {
+    display: flex;
+    gap: 8px;
+    margin: 12px 0;
+}
+
+.doc-tab {
+    background: rgba(30, 41, 59, 0.65);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-secondary);
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.doc-tab.active, .doc-tab:hover {
+    background: rgba(56, 189, 248, 0.16);
+    border-color: var(--accent-cyan);
+    color: var(--accent-cyan);
+}
+
+.clinical-note-preview {
+    background: rgba(2, 6, 23, 0.72);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 14px 16px;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    line-height: 1.55;
+    color: #e2e8f0;
+    white-space: pre-wrap;
+    max-height: 300px;
+    overflow-y: auto;
+    margin: 0;
+}
+

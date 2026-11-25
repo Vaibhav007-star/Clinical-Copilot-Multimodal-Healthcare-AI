@@ -84,7 +84,10 @@
                     <span class="view-breadcrumb" id="viewBreadcrumb">Clinical Copilot / Overview</span>
                     <h1 class="view-title" id="viewTitle">Clinical Decision-Support Overview</h1>
                 </div>
-                <div class="top-bar-right">
+                <div class="top-bar-right" style="display:flex; align-items:center; gap:12px;">
+                    <button class="btn btn-primary btn-sm" id="btnAutopilotTriage" onclick="runFullMultimodalAutopilot()">
+                        ⚡ Run Full Multimodal Triage
+                    </button>
                     <div class="research-pill">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                         Research & CDS Prototype
@@ -711,6 +714,45 @@
                                         <tbody id="workupTableBody"></tbody>
                                     </table>
                                 </div>
+                            </div>
+                        </div>
+
+                        <!-- Multimodal Triage Acuity Radar & Automated Clinical Documentation -->
+                        <div class="triage-soap-grid" id="triageSoapGrid" style="margin-top: 24px;">
+                            <div class="glass-card triage-radar-card">
+                                <div class="section-header-row">
+                                    <div>
+                                        <h3 class="card-title">Multimodal Triage Acuity Radar</h3>
+                                        <p class="card-subtitle">5-Axis Deterioration & Acuity Index (ESI-Inspired)</p>
+                                    </div>
+                                    <span class="badge badge-amber" id="triageEsiBadge">ESI --</span>
+                                </div>
+                                <div class="triage-acuity-bar">
+                                    <div>
+                                        <span class="acuity-score-label">Composite Acuity Index:</span>
+                                        <strong class="acuity-score-val" id="triageAcuityVal">-- / 100</strong>
+                                    </div>
+                                    <div class="triage-disposition" id="triageDispositionText">Run multimodal modules to compute triage disposition.</div>
+                                </div>
+                                <div class="chart-container" style="height: 270px; margin-top: 12px;">
+                                    <canvas id="triageRadarChart"></canvas>
+                                </div>
+                            </div>
+
+                            <div class="glass-card soap-studio-card">
+                                <div class="section-header-row">
+                                    <div>
+                                        <h3 class="card-title">Clinical Documentation Studio</h3>
+                                        <p class="card-subtitle">Auto-synthesized SOAP, SBAR Handoff & Patient Summary</p>
+                                    </div>
+                                    <button class="btn btn-outline btn-sm" onclick="copyActiveClinicalNote()">Copy Note</button>
+                                </div>
+                                <div class="doc-tabs-row">
+                                    <button class="doc-tab active" data-doc="soap" onclick="switchDocTab('soap')">Physician SOAP</button>
+                                    <button class="doc-tab" data-doc="sbar" onclick="switchDocTab('sbar')">ED SBAR Handoff</button>
+                                    <button class="doc-tab" data-doc="patient" onclick="switchDocTab('patient')">Patient Summary</button>
+                                </div>
+                                <pre class="clinical-note-preview" id="clinicalNotePreview">Run multimodal triage or open Case Review after running Imaging & Risk to generate structured clinical documentation.</pre>
                             </div>
                         </div>
 

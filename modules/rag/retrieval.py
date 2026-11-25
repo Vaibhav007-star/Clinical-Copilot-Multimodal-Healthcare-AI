@@ -187,12 +187,14 @@ class GuidelineRetrievalEngine:
         # Rank indices by similarity score descending
         sorted_indices = np.argsort(sims)[::-1]
 
+        # TF-IDF cosine scores are sparser than dense embeddings; scale threshold proportionally
+        tfidf_threshold = max(threshold * 0.6, 0.05)
+
         citations: List[Citation] = []
         citation_num = 1
         for idx in sorted_indices:
             score = float(sims[idx])
-            # If highest score is 0, include best chunk as context
-            if score < 0.05 and len(citations) > 0:
+            if score < tfidf_threshold:
                 break
             chunk = self.chunks[idx]
             if document_filter and document_filter.lower() not in chunk.document_title.lower():
@@ -203,7 +205,7 @@ class GuidelineRetrievalEngine:
                 page_number=chunk.page_number,
                 section_heading=chunk.section_heading,
                 snippet=chunk.text,
-                similarity_score=round(max(score, 0.45 if score > 0 else 0.20), 4)
+                similarity_score=round(score, 4)
             ))
             citation_num += 1
             if len(citations) >= top_k:

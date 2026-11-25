@@ -186,3 +186,35 @@ def test_fhir_r4_bundle_builder(cardiac_patient, mock_imaging_cardiomegaly):
     assert "Patient" in resource_types
     assert "Observation" in resource_types
     assert "DiagnosticReport" in resource_types
+
+
+def test_triage_and_soap_engine(cardiac_patient, mock_imaging_cardiomegaly):
+    from modules.orchestration.triage_soap import triage_soap_engine
+    from fastapi.testclient import TestClient
+    from api.server import app
+
+    res = triage_soap_engine.evaluate(
+        case_id="TEST-TRIAGE-01",
+        patient=cardiac_patient,
+        imaging=mock_imaging_cardiomegaly,
+    )
+    assert 1 <= res.esi_level <= 5
+    assert 0.0 <= res.acuity_score <= 100.0
+    assert len(res.axes) == 5
+    assert "STRUCTURED SOAP NOTE" in res.soap_note
+    assert "SBAR HANDOFF" in res.sbar_handoff
+    assert "YOUR VISIT SUMMARY" in res.patient_summary
+
+    client = TestClient(app)
+    api_res = client.post(
+        "/api/orchestration/triage-soap",
+        json={
+            "case_id": "TEST-TRIAGE-01",
+            "patient_input": cardiac_patient.model_dump(),
+            "imaging_result": mock_imaging_cardiomegaly.model_dump(),
+        },
+    )
+    assert api_res.status_code == 200
+    body = api_res.json()
+    assert body["esi_label"] == res.esi_label
+    assert len(body["axes"]) == 5

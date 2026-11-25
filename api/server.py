@@ -33,6 +33,7 @@ from modules.orchestration.schemas import UnifiedCaseSummary
 from modules.orchestration.clinical_review import orchestrator_service
 from modules.orchestration.ddx import ddx_engine
 from modules.orchestration.fhir import fhir_service
+from modules.orchestration.triage_soap import triage_soap_engine
 
 app = FastAPI(
     title="Clinical Copilot Web API",
@@ -329,6 +330,18 @@ def generate_unified_review(payload: ReviewPayload):
         guideline_answers=payload.guideline_answers
     )
     return summary.model_dump()
+
+@app.post("/api/orchestration/triage-soap")
+def generate_triage_and_soap(payload: ReviewPayload):
+    """Computes 5-axis multimodal triage acuity radar, ESI level, and SOAP/SBAR/Patient notes."""
+    result = triage_soap_engine.evaluate(
+        case_id=payload.case_id,
+        patient=payload.patient_input,
+        imaging=payload.imaging_result,
+        risk=payload.risk_result,
+        guideline_answers=payload.guideline_answers,
+    )
+    return result.model_dump()
 
 from fastapi.responses import FileResponse
 

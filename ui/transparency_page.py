@@ -4,7 +4,11 @@ Displays verified model architectures, real dataset provenance, performance benc
 """
 import streamlit as st
 import pandas as pd
-import torch
+
+try:
+    import torch
+except ImportError:
+    torch = None
 
 from config.settings import settings
 from modules.risk.model import risk_service
@@ -98,9 +102,10 @@ def render_transparency_page():
         st.subheader("System Environment & Runtime Diagnostics")
         e1, e2, e3 = st.columns(3)
         with e1:
-            st.metric("PyTorch Version", torch.__version__)
+            st.metric("PyTorch Version", torch.__version__ if torch is not None else "Fallback Mode")
         with e2:
-            st.metric("CUDA Available", "Yes (GPU)" if torch.cuda.is_available() else "No (CPU Mode)")
+            cuda_available = bool(torch is not None and torch.cuda.is_available())
+            st.metric("CUDA Available", "Yes (GPU)" if cuda_available else "No (CPU Mode)")
         with e3:
             st.metric("App Environment", settings.environment.upper())
 
